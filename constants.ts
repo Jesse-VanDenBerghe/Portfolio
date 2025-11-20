@@ -50,7 +50,7 @@ export const CV_DATA: CVData = {
       location: "Belgium",
       period: "Aug 2025 - Present",
       description: "Transitioned to a full-time role within DPG Media. In addition to continuing my work with the Seduction Team on the Temptation SDK, I joined the Tracking Team. I am now responsible for managing and developing the Tracking SDK, which handles critical data analytics across the entire DPG Media application ecosystem.",
-      technologies: ["Android", "Kotlin", "SDK Development", "Tracking", "Analytics"]
+      technologies: ["Android", "iOS", "SDK Development", "Tracking", "AWS", "DevOps"]
     },
     {
       id: "exp1",
@@ -59,7 +59,7 @@ export const CV_DATA: CVData = {
       location: "Belgium",
       period: "Aug 2024 - Aug 2025",
       description: "As a member of the Seduction Team, I was responsible for the maintenance and development of the Temptation SDK. This SDK is used in multiple apps within the DPG Media ecosystem. I also committed myself to the mobile guild, where I helped organize several guild days.",
-      technologies: ["Android", "Kotlin", "SDK Development", "Mobile Architecture"]
+      technologies: ["Android", "iOS", "SDK Development", "Mobile Architecture"]
     },
     {
       id: "exp2",
