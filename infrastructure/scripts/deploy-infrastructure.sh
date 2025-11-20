@@ -60,6 +60,7 @@ if [ "$STACK_EXISTS" == "DOES_NOT_EXIST" ]; then
         --stack-name "$STACK_NAME" \
         --template-body file://"$TEMPLATE_FILE" \
         --parameters file://"$PARAMETERS_FILE" \
+        --capabilities CAPABILITY_NAMED_IAM \
         --region "$REGION" \
         --profile "$PROFILE" \
         --tags Key=ManagedBy,Value=GitHubActions Key=Project,Value=Portfolio \
@@ -86,6 +87,7 @@ else
         --stack-name "$STACK_NAME" \
         --template-body file://"$TEMPLATE_FILE" \
         --parameters file://"$PARAMETERS_FILE" \
+        --capabilities CAPABILITY_NAMED_IAM \
         --region "$REGION" \
         --profile "$PROFILE" \
         --tags Key=ManagedBy,Value=GitHubActions Key=Project,Value=Portfolio 2>/dev/null || {

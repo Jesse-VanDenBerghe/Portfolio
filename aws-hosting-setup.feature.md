@@ -52,23 +52,23 @@ Create CloudFormation templates for S3 + CloudFront hosting infrastructure.
 ### Phase 2: GitHub Actions CI/CD Pipeline
 Automate build and deployment process on push to main branch.
 
-- [ ] Create `.github/workflows/deploy.yml` workflow with:
-  - [ ] Trigger on push to main branch
-  - [ ] Node.js setup (v18+)
-  - [ ] Dependency installation (`npm ci`)
-  - [ ] Production build (`npm run build`)
-  - [ ] AWS credentials configuration (GitHub secrets)
-  - [ ] S3 sync of `dist/` directory
-  - [ ] CloudFront cache invalidation (/*) 
-- [ ] Document required GitHub secrets:
-  - [ ] `AWS_ACCESS_KEY_ID`
-  - [ ] `AWS_SECRET_ACCESS_KEY`
-  - [ ] `AWS_REGION` (eu-west-3)
-  - [ ] `AWS_ACCOUNT_ID` (920373033350)
-  - [ ] `S3_BUCKET_NAME` (from CloudFormation output)
-  - [ ] `CLOUDFRONT_DISTRIBUTION_ID` (from CloudFormation output)
-  - [ ] `GEMINI_API_KEY` (for build-time env var)
-- [ ] Add workflow permissions documentation
+- [X] Create `.github/workflows/deploy.yml` workflow with:
+  - [X] Trigger on push to main branch
+  - [X] Node.js setup (v18+)
+  - [X] Dependency installation (`npm ci`)
+  - [X] Production build (`npm run build`)
+  - [X] AWS credentials configuration (GitHub secrets)
+  - [X] S3 sync of `dist/` directory
+  - [X] CloudFront cache invalidation (/*) 
+- [X] Document required GitHub secrets:
+  - [X] `AWS_ACCESS_KEY_ID`
+  - [X] `AWS_SECRET_ACCESS_KEY`
+  - [X] `AWS_REGION` (eu-west-3)
+  - [X] `AWS_ACCOUNT_ID` (920373033350)
+  - [X] `S3_BUCKET_NAME` (from CloudFormation output)
+  - [X] `CLOUDFRONT_DISTRIBUTION_ID` (from CloudFormation output)
+  - [X] `GEMINI_API_KEY` (for build-time env var)
+- [X] Add workflow permissions documentation
 - [ ] Test workflow on feature branch before merging
 
 **Deliverable**: Automated deployment pipeline from GitHub to AWS

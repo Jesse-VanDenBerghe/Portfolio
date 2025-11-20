@@ -6,8 +6,81 @@ Parameters:
     Type: String
     Default: portfolio
     Description: Stack name prefix for resources
+  
+  GitHubOrg:
+    Type: String
+    Description: GitHub organization or username
+  
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository name
 
 Resources:
+  # GitHub OIDC Provider
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+      Tags:
+        - Key: Name
+          Value: !Sub '${StackName}-github-oidc'
+
+  # IAM Role for GitHub Actions
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${StackName}-github-actions-deploy'
+      Description: Role for GitHub Actions to deploy portfolio
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !GetAtt GitHubOIDCProvider.Arn
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com'
+              StringLike:
+                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubOrg}/${GitHubRepo}:*'
+      ManagedPolicyArns: []
+      Tags:
+        - Key: Name
+          Value: !Sub '${StackName}-github-actions-role'
+
+  # IAM Policy for S3 and CloudFront access
+  GitHubActionsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${StackName}-deploy-policy'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: S3DeployAccess
+            Effect: Allow
+            Action:
+              - 's3:PutObject'
+              - 's3:PutObjectAcl'
+              - 's3:GetObject'
+              - 's3:DeleteObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt PortfolioBucket.Arn
+              - !Sub '${PortfolioBucket.Arn}/*'
+          - Sid: CloudFrontInvalidation
+            Effect: Allow
+            Action:
+              - 'cloudfront:CreateInvalidation'
+              - 'cloudfront:GetInvalidation'
+            Resource: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${PortfolioDistribution}'
+      Roles:
+        - !Ref GitHubActionsRole
+
   # S3 Bucket for hosting static files
   PortfolioBucket:
     Type: AWS::S3::Bucket
@@ -151,3 +224,9 @@ Outputs:
     Value: !Ref OriginAccessIdentity
     Export:
       Name: !Sub '${StackName}-oai-id'
+
+  GitHubActionsRoleArn:
+    Description: ARN of IAM role for GitHub Actions OIDC
+    Value: !GetAtt GitHubActionsRole.Arn
+    Export:
+      Name: !Sub '${StackName}-github-role-arn'
