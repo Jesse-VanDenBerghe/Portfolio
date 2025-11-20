@@ -2,10 +2,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowDown, Smartphone, Brain, Cloud, MapPin } from 'lucide-react';
 import { CV_DATA } from '../constants';
+import { CodeBackground } from './CodeBackground';
 
 export const Hero: React.FC = () => {
   return (
     <section className="min-h-screen flex flex-col justify-center items-center relative bg-slate-900 text-white overflow-hidden px-4">
+      {/* Coding Animation Background */}
+      <CodeBackground />
+      
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[100px]" />
