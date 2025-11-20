@@ -24,9 +24,21 @@ Parameters:
     Type: String
     Default: ''
     Description: Optional ACM certificate ARN (us-east-1 only). Required if DomainName specified.
+  
+  EnableWwwSubdomain:
+    Type: String
+    Default: 'false'
+    Description: Enable www subdomain (requires wildcard cert)
+    AllowedValues:
+      - 'true'
+      - 'false'
 
 Conditions:
   HasDomain: !Not [!Equals [!Ref DomainName, '']]
+  EnableWww: !Equals [!Ref EnableWwwSubdomain, 'true']
+  HasWwwSubdomain: !And
+    - !Not [!Equals [!Ref DomainName, '']]
+    - !Equals [!Ref EnableWwwSubdomain, 'true']
 
 Resources:
   # GitHub OIDC Provider
@@ -156,7 +168,10 @@ Resources:
         Comment: !Sub '${StackName} portfolio CDN'
         Aliases: !If
           - HasDomain
-          - [!Ref DomainName]
+          - !If
+            - HasWwwSubdomain
+            - [!Ref DomainName, !Sub 'www.${DomainName}']
+            - [!Ref DomainName]
           - !Ref AWS::NoValue
         
         # Origin S3 bucket
@@ -252,6 +267,32 @@ Resources:
         DNSName: !GetAtt PortfolioDistribution.DomainName
         EvaluateTargetHealth: false
 
+  # Route53 Record for www subdomain - A record (IPv4)
+  PortfolioWwwARecord:
+    Type: AWS::Route53::RecordSet
+    Condition: HasWwwSubdomain
+    Properties:
+      HostedZoneId: Z01016973PXM3AQAQ9DTV
+      Name: !Sub 'www.${DomainName}'
+      Type: A
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2  # CloudFront global hosted zone
+        DNSName: !GetAtt PortfolioDistribution.DomainName
+        EvaluateTargetHealth: false
+
+  # Route53 Record for www subdomain - AAAA record (IPv6)
+  PortfolioWwwAAAARecord:
+    Type: AWS::Route53::RecordSet
+    Condition: HasWwwSubdomain
+    Properties:
+      HostedZoneId: Z01016973PXM3AQAQ9DTV
+      Name: !Sub 'www.${DomainName}'
+      Type: AAAA
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2  # CloudFront global hosted zone
+        DNSName: !GetAtt PortfolioDistribution.DomainName
+        EvaluateTargetHealth: false
+
 Outputs:
   BucketName:
     Description: S3 bucket name for portfolio files
@@ -289,3 +330,10 @@ Outputs:
     Value: !Sub 'https://${DomainName}'
     Export:
       Name: !Sub '${StackName}-domain-url'
+
+  WwwSubdomainURL:
+    Condition: HasWwwSubdomain
+    Description: www subdomain URL
+    Value: !Sub 'https://www.${DomainName}'
+    Export:
+      Name: !Sub '${StackName}-www-url'
