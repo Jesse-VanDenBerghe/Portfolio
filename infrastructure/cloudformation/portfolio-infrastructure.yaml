@@ -1,0 +1,237 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Portfolio hosting infrastructure - S3 + CloudFront with SPA routing'
+
+Parameters:
+  StackName:
+    Type: String
+    Default: portfolio
+    Description: Stack name prefix for resources
+  
+  GitHubOrg:
+    Type: String
+    Description: GitHub organization or username
+  
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository name
+
+Resources:
+  # GitHub OIDC Provider
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+      Tags:
+        - Key: Name
+          Value: !Sub '${StackName}-github-oidc'
+
+  # IAM Role for GitHub Actions
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${StackName}-github-actions-deploy'
+      Description: Role for GitHub Actions to deploy portfolio
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !GetAtt GitHubOIDCProvider.Arn
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com'
+              StringLike:
+                'token.actions.githubusercontent.com:sub': !Sub 'repo:${GitHubOrg}/${GitHubRepo}:*'
+      ManagedPolicyArns: []
+      Tags:
+        - Key: Name
+          Value: !Sub '${StackName}-github-actions-role'
+
+  # IAM Policy for S3 and CloudFront access
+  GitHubActionsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${StackName}-deploy-policy'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: S3DeployAccess
+            Effect: Allow
+            Action:
+              - 's3:PutObject'
+              - 's3:PutObjectAcl'
+              - 's3:GetObject'
+              - 's3:DeleteObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt PortfolioBucket.Arn
+              - !Sub '${PortfolioBucket.Arn}/*'
+          - Sid: CloudFrontInvalidation
+            Effect: Allow
+            Action:
+              - 'cloudfront:CreateInvalidation'
+              - 'cloudfront:GetInvalidation'
+            Resource: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${PortfolioDistribution}'
+          - Sid: CloudFormationDescribe
+            Effect: Allow
+            Action:
+              - 'cloudformation:DescribeStacks'
+            Resource: !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${StackName}/*'
+      Roles:
+        - !Ref GitHubActionsRole
+
+  # S3 Bucket for hosting static files
+  PortfolioBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${StackName}-hosting-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${StackName}-hosting'
+        - Key: Environment
+          Value: production
+
+  # CloudFront Origin Access Identity
+  OriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'OAI for ${StackName} portfolio'
+
+  # S3 Bucket Policy - Allow CloudFront OAI access only
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PortfolioBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: CloudFrontOAIAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${OriginAccessIdentity}'
+            Action: 's3:GetObject'
+            Resource: !Sub '${PortfolioBucket.Arn}/*'
+          - Sid: CloudFrontOAIListBucket
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${OriginAccessIdentity}'
+            Action: 's3:ListBucket'
+            Resource: !GetAtt PortfolioBucket.Arn
+
+  # CloudFront Distribution
+  PortfolioDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        HttpVersion: http2and3
+        DefaultRootObject: index.html
+        Comment: !Sub '${StackName} portfolio CDN'
+        
+        # Origin S3 bucket
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt PortfolioBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${OriginAccessIdentity}'
+
+        # Default cache behavior
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          ViewerProtocolPolicy: redirect-to-https
+          TargetOriginId: S3Origin
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          MinTTL: 0
+          DefaultTTL: 3600
+          MaxTTL: 86400
+
+        # Cache behavior for assets (longer TTL)
+        CacheBehaviors:
+          - PathPattern: 'assets/*'
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+            Compress: true
+            ViewerProtocolPolicy: https-only
+            TargetOriginId: S3Origin
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+            MinTTL: 0
+            DefaultTTL: 31536000
+            MaxTTL: 31536000
+
+        # Custom error response for SPA routing (404 -> index.html)
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 300
+
+        # Security
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+Outputs:
+  BucketName:
+    Description: S3 bucket name for portfolio files
+    Value: !Ref PortfolioBucket
+    Export:
+      Name: !Sub '${StackName}-bucket-name'
+
+  CloudFrontURL:
+    Description: CloudFront distribution URL
+    Value: !Sub 'https://${PortfolioDistribution.DomainName}'
+    Export:
+      Name: !Sub '${StackName}-cloudfront-url'
+
+  DistributionID:
+    Description: CloudFront distribution ID for cache invalidation
+    Value: !Ref PortfolioDistribution
+    Export:
+      Name: !Sub '${StackName}-distribution-id'
+
+  OriginAccessIdentityID:
+    Description: Origin Access Identity ID
+    Value: !Ref OriginAccessIdentity
+    Export:
+      Name: !Sub '${StackName}-oai-id'
+
+  GitHubActionsRoleArn:
+    Description: ARN of IAM role for GitHub Actions OIDC
+    Value: !GetAtt GitHubActionsRole.Arn
+    Export:
+      Name: !Sub '${StackName}-github-role-arn'

@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "StackName",
+    "ParameterValue": "portfolio"
+  },
+  {
+    "ParameterKey": "GitHubOrg",
+    "ParameterValue": "Jesse-VanDenBerghe"
+  },
+  {
+    "ParameterKey": "GitHubRepo",
+    "ParameterValue": "Portfolio"
+  }
+]
