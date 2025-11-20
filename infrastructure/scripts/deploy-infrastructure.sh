@@ -49,8 +49,7 @@ echo -e "${YELLOW}Validating CloudFormation template...${NC}"
 echo "  Running: aws cloudformation validate-template"
 if aws cloudformation validate-template \
     --template-body file://"$TEMPLATE_FILE" \
-    --region "$REGION" \
-    --profile "$PROFILE"; then
+    "${AWS_ARGS[@]}"; then
     echo -e "${GREEN}✓ Template validation passed${NC}"
 else
     echo -e "${RED}✗ Template validation failed${NC}"
@@ -87,8 +86,7 @@ if [ "$STACK_EXISTS" == "DOES_NOT_EXIST" ]; then
     echo -e "${YELLOW}Waiting for stack creation to complete (this may take 5-10 minutes)...${NC}"
     aws cloudformation wait stack-create-complete \
         --stack-name "$STACK_NAME" \
-        --region "$REGION" \
-        --profile "$PROFILE"
+        "${AWS_ARGS[@]}"
     
     echo -e "${GREEN}✓ Stack created successfully${NC}"
 else
