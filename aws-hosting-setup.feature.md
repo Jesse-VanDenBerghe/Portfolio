@@ -69,7 +69,7 @@ Automate build and deployment process on push to main branch.
   - [X] `CLOUDFRONT_DISTRIBUTION_ID` (from CloudFormation output)
   - [X] `GEMINI_API_KEY` (for build-time env var)
 - [X] Add workflow permissions documentation
-- [ ] Test workflow on feature branch before merging
+- [X] Test workflow on feature branch before merging
 
 **Deliverable**: Automated deployment pipeline from GitHub to AWS
 
@@ -78,17 +78,17 @@ Automate build and deployment process on push to main branch.
 ### Phase 3: Build Configuration & Environment Variables
 Configure Vite for production deployment on CloudFront.
 
-- [ ] Update `vite.config.ts`:
-  - [ ] Configure base URL for CloudFront (root path)
-  - [ ] Verify build output directory (`dist`)
-  - [ ] Add production-specific optimizations
-- [ ] Create `.env.production` template file
-- [ ] Update `package.json` scripts if needed
-- [ ] Add CloudFormation error page configuration (404→index.html for SPA)
-- [ ] Test production build locally:
-  - [ ] Run `npm run build`
-  - [ ] Run `npm run preview`
-  - [ ] Verify routing and assets load correctly
+- [X] Update `vite.config.ts`:
+  - [X] Configure base URL for CloudFront (root path)
+  - [X] Verify build output directory (`dist`)
+  - [X] Add production-specific optimizations
+- [X] Create `.env.production` template file
+- [X] Update `package.json` scripts if needed
+- [X] Add CloudFormation error page configuration (404→index.html for SPA)
+- [X] Test production build locally:
+  - [X] Run `npm run build`
+  - [X] Run `npm run preview`
+  - [X] Verify routing and assets load correctly
 
 **Deliverable**: Production-ready Vite build configuration
 
