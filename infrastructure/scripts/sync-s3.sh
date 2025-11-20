@@ -25,6 +25,7 @@ fi
 echo -e "${YELLOW}Portfolio S3 Sync${NC}"
 echo "Stack: $STACK_NAME"
 echo "Region: $REGION"
+echo "Profile: ${PROFILE:-none (using environment credentials)}"
 echo "Dist: $DIST_DIR"
 echo ""
 
@@ -36,14 +37,17 @@ fi
 
 # Get bucket name from CloudFormation
 echo -e "${YELLOW}Retrieving bucket name from CloudFormation...${NC}"
-BUCKET=$(aws cloudformation describe-stacks \
+if ! BUCKET=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
     $AWS_ARGS \
     --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
-    --output text 2>/dev/null)
+    --output text); then
+    echo -e "${RED}Error: AWS CLI call failed. Check credentials and stack name.${NC}"
+    exit 1
+fi
 
 if [ -z "$BUCKET" ]; then
-    echo -e "${RED}Error: Could not retrieve bucket name. Stack may not exist.${NC}"
+    echo -e "${RED}Error: Bucket name is empty. Check CloudFormation stack outputs.${NC}"
     exit 1
 fi
 
@@ -65,7 +69,7 @@ DIST_ID=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
     $AWS_ARGS \
     --query 'Stacks[0].Outputs[?OutputKey==`DistributionID`].OutputValue' \
-    --output text 2>/dev/null)
+    --output text) || DIST_ID=""
 
 if [ -z "$DIST_ID" ]; then
     echo -e "${YELLOW}⚠ Could not retrieve distribution ID. Skip cache invalidation.${NC}"

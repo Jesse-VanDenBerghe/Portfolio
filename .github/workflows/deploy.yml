@@ -40,3 +40,6 @@ jobs:
       
       - name: Deploy to S3 & invalidate CloudFront
         run: make sync-s3
+        env:
+          AWS_REGION: eu-west-3
+          AWS_PROFILE: ''
