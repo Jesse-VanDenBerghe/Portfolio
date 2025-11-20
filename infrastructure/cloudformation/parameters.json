@@ -10,5 +10,17 @@
   {
     "ParameterKey": "GitHubRepo",
     "ParameterValue": "Portfolio"
+  },
+  {
+    "ParameterKey": "DomainName",
+    "ParameterValue": "jessevandenberghe.com"
+  },
+  {
+    "ParameterKey": "CertificateArn",
+    "ParameterValue": "arn:aws:acm:us-east-1:920373033350:certificate/97e5636e-b0a4-499a-bd12-ea3f079dbc95"
+  },
+  {
+    "ParameterKey": "EnableWwwSubdomain",
+    "ParameterValue": "true"
   }
 ]
