@@ -7,8 +7,16 @@ set -e
 
 STACK_NAME="portfolio"
 REGION="${AWS_REGION:-eu-west-3}"
-PROFILE="${AWS_PROFILE:-}"
 DIST_DIR="dist"
+
+# If using environment credentials (CI/CD), unset AWS_PROFILE to prevent AWS CLI
+# from trying to use an empty or default profile that requires SSO
+if [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
+    unset AWS_PROFILE
+elif [ -z "${AWS_PROFILE:-}" ]; then
+    # No env credentials and no profile - use default personal profile
+    AWS_PROFILE="personal"
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -16,16 +24,17 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Build AWS CLI args (profile optional for CI environments)
-AWS_ARGS="--region $REGION"
-if [ -n "$PROFILE" ]; then
-    AWS_ARGS="$AWS_ARGS --profile $PROFILE"
+# Build AWS CLI args array (profile optional for CI environments)
+declare -a AWS_ARGS
+AWS_ARGS=(--region "$REGION")
+if [ -n "${AWS_PROFILE:-}" ]; then
+    AWS_ARGS+=(--profile "$AWS_PROFILE")
 fi
 
 echo -e "${YELLOW}Portfolio S3 Sync${NC}"
 echo "Stack: $STACK_NAME"
 echo "Region: $REGION"
-echo "Profile: ${PROFILE:-none (using environment credentials)}"
+echo "Profile: ${AWS_PROFILE:-none (using environment credentials)}"
 echo "Dist: $DIST_DIR"
 echo ""
 
@@ -39,7 +48,7 @@ fi
 echo -e "${YELLOW}Retrieving bucket name from CloudFormation...${NC}"
 if ! BUCKET=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
-    $AWS_ARGS \
+    "${AWS_ARGS[@]}" \
     --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
     --output text); then
     echo -e "${RED}Error: AWS CLI call failed. Check credentials and stack name.${NC}"
@@ -56,7 +65,7 @@ echo -e "${GREEN}✓ Bucket: $BUCKET${NC}"
 # Sync to S3
 echo -e "${YELLOW}Syncing files to S3...${NC}"
 aws s3 sync "$DIST_DIR/" "s3://$BUCKET" \
-    $AWS_ARGS \
+    "${AWS_ARGS[@]}" \
     --delete \
     --cache-control 'max-age=3600' \
     --exclude '.gitkeep'
@@ -67,7 +76,7 @@ echo -e "${GREEN}✓ S3 sync complete${NC}"
 echo -e "${YELLOW}Invalidating CloudFront cache...${NC}"
 DIST_ID=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
-    $AWS_ARGS \
+    "${AWS_ARGS[@]}" \
     --query 'Stacks[0].Outputs[?OutputKey==`DistributionID`].OutputValue' \
     --output text) || DIST_ID=""
 
@@ -77,7 +86,7 @@ else
     INVALIDATION_ID=$(aws cloudfront create-invalidation \
         --distribution-id "$DIST_ID" \
         --paths '/*' \
-        $AWS_ARGS \
+        "${AWS_ARGS[@]}" \
         --query 'Invalidation.Id' \
         --output text)
     
@@ -92,8 +101,7 @@ echo ""
 # Get and display CloudFront URL
 CLOUDFRONT_URL=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
-    --region "$REGION" \
-    --profile "$PROFILE" \
+    "${AWS_ARGS[@]}" \
     --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontURL`].OutputValue' \
     --output text 2>/dev/null)
 

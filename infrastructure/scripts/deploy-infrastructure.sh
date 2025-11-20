@@ -7,9 +7,17 @@ set -e
 
 STACK_NAME="portfolio"
 REGION="${AWS_REGION:-eu-west-3}"
-PROFILE="${AWS_PROFILE:-}"
 TEMPLATE_FILE="infrastructure/cloudformation/portfolio-infrastructure.yaml"
 PARAMETERS_FILE="infrastructure/cloudformation/parameters.json"
+
+# If using environment credentials (CI/CD), unset AWS_PROFILE to prevent AWS CLI
+# from trying to use an empty or default profile that requires SSO
+if [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
+    unset AWS_PROFILE
+elif [ -z "${AWS_PROFILE:-}" ]; then
+    # No env credentials and no profile - use default personal profile
+    AWS_PROFILE="personal"
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -20,13 +28,14 @@ NC='\033[0m' # No Color
 echo -e "${YELLOW}Portfolio CloudFormation Deployment${NC}"
 echo "Stack: $STACK_NAME"
 echo "Region: $REGION"
-echo "Profile: ${PROFILE:-none (using environment credentials)}"
+echo "Profile: ${AWS_PROFILE:-none (using environment credentials)}"
 echo ""
 
-# Build AWS CLI args (profile optional for CI environments)
-AWS_ARGS="--region $REGION"
-if [ -n "$PROFILE" ]; then
-    AWS_ARGS="$AWS_ARGS --profile $PROFILE"
+# Build AWS CLI args array (profile optional for CI environments)
+declare -a AWS_ARGS
+AWS_ARGS=(--region "$REGION")
+if [ -n "${AWS_PROFILE:-}" ]; then
+    AWS_ARGS+=(--profile "$AWS_PROFILE")
 fi
 
 # Check if template file exists
@@ -53,7 +62,7 @@ echo -e "${YELLOW}Checking if stack exists...${NC}"
 echo "  Running: aws cloudformation describe-stacks --stack-name $STACK_NAME"
 STACK_EXISTS=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
-    $AWS_ARGS \
+    "${AWS_ARGS[@]}" \
     --query 'Stacks[0].StackStatus' \
     --output text 2>/dev/null || echo "DOES_NOT_EXIST")
 
@@ -66,7 +75,7 @@ if [ "$STACK_EXISTS" == "DOES_NOT_EXIST" ]; then
         --template-body file://"$TEMPLATE_FILE" \
         --parameters file://"$PARAMETERS_FILE" \
         --capabilities CAPABILITY_NAMED_IAM \
-        $AWS_ARGS \
+        "${AWS_ARGS[@]}" \
         --tags Key=ManagedBy,Value=GitHubActions Key=Project,Value=Portfolio \
         --query 'StackId' \
         --output text)
@@ -92,7 +101,7 @@ else
         --template-body file://"$TEMPLATE_FILE" \
         --parameters file://"$PARAMETERS_FILE" \
         --capabilities CAPABILITY_NAMED_IAM \
-        $AWS_ARGS \
+        "${AWS_ARGS[@]}" \
         --tags Key=ManagedBy,Value=GitHubActions Key=Project,Value=Portfolio 2>/dev/null || {
         echo -e "${YELLOW}⚠ No updates needed (template unchanged)${NC}"
     }
@@ -107,7 +116,7 @@ echo "  Running: aws cloudformation describe-stacks"
 echo ""
 aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
-    $AWS_ARGS \
+    "${AWS_ARGS[@]}" \
     --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
     --output table
 
