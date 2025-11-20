@@ -10,5 +10,13 @@
   {
     "ParameterKey": "GitHubRepo",
     "ParameterValue": "Portfolio"
+  },
+  {
+    "ParameterKey": "DomainName",
+    "ParameterValue": "jessevandenberghe.com"
+  },
+  {
+    "ParameterKey": "CertificateArn",
+    "ParameterValue": "arn:aws:acm:us-east-1:920373033350:certificate/edf19a00-cc13-4841-8fa8-1808de71d1b1"
   }
 ]
