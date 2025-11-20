@@ -10,7 +10,8 @@ export const CV_DATA: CVData = {
   email: "jesse.vandenberghe95@gmail.com",
   socials: [
     { platform: "LinkedIn", url: "https://www.linkedin.com/in/jessevandenberghe/", icon: "linkedin" },
-    { platform: "GitHub", url: "https://github.com/Jesse-VanDenBerghe", icon: "github" }
+    { platform: "GitHub", url: "https://github.com/Jesse-VanDenBerghe", icon: "github" },
+    { platform: "Instagram", url: "https://www.instagram.com/jessevandenberghe/", icon: "instagram" }
   ],
   hobbies: [
     "Dungeons & Dragons",

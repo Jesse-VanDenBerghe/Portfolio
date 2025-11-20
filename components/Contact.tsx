@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Github, Linkedin, Twitter, ArrowRight } from 'lucide-react';
+import { Mail, Github, Linkedin, Twitter, ArrowRight, Instagram } from 'lucide-react';
 import { CV_DATA } from '../constants';
 import { SectionHeader } from './SectionHeader';
 
@@ -10,6 +10,7 @@ export const Contact: React.FC = () => {
       case 'github': return <Github size={24} />;
       case 'linkedin': return <Linkedin size={24} />;
       case 'twitter': return <Twitter size={24} />;
+      case 'instagram': return <Instagram size={24} />;
       default: return null;
     }
   };
