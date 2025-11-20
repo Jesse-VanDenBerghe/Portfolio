@@ -6,8 +6,8 @@
 set -e
 
 STACK_NAME="portfolio"
-REGION="eu-west-3"
-PROFILE="personal"
+REGION="${AWS_REGION:-eu-west-3}"
+PROFILE="${AWS_PROFILE:-}"
 TEMPLATE_FILE="infrastructure/cloudformation/portfolio-infrastructure.yaml"
 PARAMETERS_FILE="infrastructure/cloudformation/parameters.json"
 
@@ -20,8 +20,14 @@ NC='\033[0m' # No Color
 echo -e "${YELLOW}Portfolio CloudFormation Deployment${NC}"
 echo "Stack: $STACK_NAME"
 echo "Region: $REGION"
-echo "Profile: $PROFILE"
+echo "Profile: ${PROFILE:-none (using environment credentials)}"
 echo ""
+
+# Build AWS CLI args (profile optional for CI environments)
+AWS_ARGS="--region $REGION"
+if [ -n "$PROFILE" ]; then
+    AWS_ARGS="$AWS_ARGS --profile $PROFILE"
+fi
 
 # Check if template file exists
 if [ ! -f "$TEMPLATE_FILE" ]; then
@@ -47,8 +53,7 @@ echo -e "${YELLOW}Checking if stack exists...${NC}"
 echo "  Running: aws cloudformation describe-stacks --stack-name $STACK_NAME"
 STACK_EXISTS=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
-    --region "$REGION" \
-    --profile "$PROFILE" \
+    $AWS_ARGS \
     --query 'Stacks[0].StackStatus' \
     --output text 2>/dev/null || echo "DOES_NOT_EXIST")
 
@@ -61,8 +66,7 @@ if [ "$STACK_EXISTS" == "DOES_NOT_EXIST" ]; then
         --template-body file://"$TEMPLATE_FILE" \
         --parameters file://"$PARAMETERS_FILE" \
         --capabilities CAPABILITY_NAMED_IAM \
-        --region "$REGION" \
-        --profile "$PROFILE" \
+        $AWS_ARGS \
         --tags Key=ManagedBy,Value=GitHubActions Key=Project,Value=Portfolio \
         --query 'StackId' \
         --output text)
@@ -88,8 +92,7 @@ else
         --template-body file://"$TEMPLATE_FILE" \
         --parameters file://"$PARAMETERS_FILE" \
         --capabilities CAPABILITY_NAMED_IAM \
-        --region "$REGION" \
-        --profile "$PROFILE" \
+        $AWS_ARGS \
         --tags Key=ManagedBy,Value=GitHubActions Key=Project,Value=Portfolio 2>/dev/null || {
         echo -e "${YELLOW}⚠ No updates needed (template unchanged)${NC}"
     }
@@ -104,8 +107,7 @@ echo "  Running: aws cloudformation describe-stacks"
 echo ""
 aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
-    --region "$REGION" \
-    --profile "$PROFILE" \
+    $AWS_ARGS \
     --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
     --output table
 

@@ -6,8 +6,8 @@
 set -e
 
 STACK_NAME="portfolio"
-REGION="eu-west-3"
-PROFILE="personal"
+REGION="${AWS_REGION:-eu-west-3}"
+PROFILE="${AWS_PROFILE:-}"
 DIST_DIR="dist"
 
 # Colors for output
@@ -15,6 +15,12 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# Build AWS CLI args (profile optional for CI environments)
+AWS_ARGS="--region $REGION"
+if [ -n "$PROFILE" ]; then
+    AWS_ARGS="$AWS_ARGS --profile $PROFILE"
+fi
 
 echo -e "${YELLOW}Portfolio S3 Sync${NC}"
 echo "Stack: $STACK_NAME"
@@ -32,8 +38,7 @@ fi
 echo -e "${YELLOW}Retrieving bucket name from CloudFormation...${NC}"
 BUCKET=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
-    --region "$REGION" \
-    --profile "$PROFILE" \
+    $AWS_ARGS \
     --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
     --output text 2>/dev/null)
 
@@ -47,8 +52,7 @@ echo -e "${GREEN}✓ Bucket: $BUCKET${NC}"
 # Sync to S3
 echo -e "${YELLOW}Syncing files to S3...${NC}"
 aws s3 sync "$DIST_DIR/" "s3://$BUCKET" \
-    --region "$REGION" \
-    --profile "$PROFILE" \
+    $AWS_ARGS \
     --delete \
     --cache-control 'max-age=3600' \
     --exclude '.gitkeep'
@@ -59,8 +63,7 @@ echo -e "${GREEN}✓ S3 sync complete${NC}"
 echo -e "${YELLOW}Invalidating CloudFront cache...${NC}"
 DIST_ID=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
-    --region "$REGION" \
-    --profile "$PROFILE" \
+    $AWS_ARGS \
     --query 'Stacks[0].Outputs[?OutputKey==`DistributionID`].OutputValue' \
     --output text 2>/dev/null)
 
@@ -70,8 +73,7 @@ else
     INVALIDATION_ID=$(aws cloudfront create-invalidation \
         --distribution-id "$DIST_ID" \
         --paths '/*' \
-        --region "$REGION" \
-        --profile "$PROFILE" \
+        $AWS_ARGS \
         --query 'Invalidation.Id' \
         --output text)
     
