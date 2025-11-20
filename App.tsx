@@ -17,7 +17,7 @@ const App: React.FC = () => {
       <Skills />
       <Certifications />
       <Experience />
-      <Projects />
+      {/* <Projects /> */}
       <Contact />
       <Footer />
       <AgentChat />
