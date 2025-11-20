@@ -1,24 +1,47 @@
 # Portfolio
 
-AI-powered portfolio with React + Vite, hosted on AWS S3 + CloudFront.
+AI-powered portfolio with React 19 + Vite + TypeScript, hosted on AWS S3 + CloudFront with Gemini API integration.
 
-## Run Locally
+## Live Demo
 
-**Prerequisites:** Node.js 18+
+🌐 **[www.jessevandenberghe.com](https://www.jessevandenberghe.com)**
 
-1. Install dependencies: `npm install`
-2. Set `GEMINI_API_KEY` in [.env.local](.env.local)
-3. Run: `npm run dev`
+## Features
 
-## Deployment
+- Interactive AI chat agent (powered by Google Gemini)
+- Dark theme with Tailwind CSS & Framer Motion animations
+- Infrastructure-as-code (CloudFormation)
+- Auto-deploy via GitHub Actions
 
-Portfolio auto-deploys to AWS on push to `main` via GitHub Actions.
+## Quick Start
 
-**Infrastructure**: See [infrastructure/README.md](infrastructure/README.md) for:
-- CloudFormation stack details
-- Manual deployment steps
-- CloudFront cache invalidation
-- Troubleshooting & cost breakdown
-- IAM permissions & rollback procedures
+```bash
+npm install
+echo "GEMINI_API_KEY=your-api-key" > .env.local
+npm run dev
+```
 
-**Live URL**: Check CloudFormation stack outputs for CloudFront domain
+Visit http://localhost:5173 and test the chat widget.
+
+## Build & Deploy
+
+```bash
+npm run build          # Create production bundle
+npm run preview        # Preview dist/ locally
+make sync-s3           # Upload to S3 + invalidate CloudFront
+```
+
+Auto-deploys to AWS on push to `main` via GitHub Actions.
+
+For first-time AWS setup: see [infrastructure/README.md](infrastructure/README.md)
+
+## Project Structure
+
+- `src/` – React components, constants, services
+- `components/` – Portfolio sections (Hero, Experience, Skills, etc.)
+- `services/geminiService.ts` – Gemini API integration
+- `infrastructure/` – CloudFormation templates & deployment scripts
+
+## Getting API Key
+
+Get a free Gemini API key at [Google AI Studio](https://aistudio.google.com/apikey)
