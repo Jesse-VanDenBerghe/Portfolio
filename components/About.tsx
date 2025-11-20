@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { CV_DATA } from '../constants';
 import { SectionHeader } from './SectionHeader';
-import { Heart, Mountain, Quote, Gamepad2 } from 'lucide-react';
+import { Heart, Mountain, Quote, Gamepad2, Gauge } from 'lucide-react';
 
 export const About: React.FC = () => {
   return (
@@ -56,6 +56,7 @@ export const About: React.FC = () => {
 const getHobbyIcon = (hobby: string) => {
   const lower = hobby.toLowerCase();
   if (lower.includes('dungeons') || lower.includes('dragons')) return <Gamepad2 size={18} className="text-purple-400" />;
-  if (lower.includes('hiking') || lower.includes('running')) return <Mountain size={18} className="text-emerald-400" />;
+  if (lower.includes('hiking')) return <Mountain size={18} className="text-emerald-400" />;
+  if (lower.includes('running')) return <Gauge size={18} className="text-yellow-400" />;
   return <Heart size={18} className="text-blue-400" />;
 };
